@@ -1,0 +1,80 @@
+function renderResults(results) {
+      resultsEl.innerHTML = "";
+      results.forEach((r, idx) => {
+        const isU = r.orientation === "Upright";
+        const meaning = isU ? r.up : r.rev;
+
+        const div = document.createElement("div");
+        div.className = "resultItem " + (isU ? "upright" : "reversed");
+        div.innerHTML = `
+          <div style="font-weight:900; font-size:16px;">
+            ${idx + 1}. ${escapeHtml(r.zh)}
+            <span class="badge">${isU ? "正位" : "逆位"}</span>
+            <span class="badge">${r.arcana === "Major" ? "大阿爾克那" : "小阿爾克那"}</span>
+          </div>
+
+          <div class="grid2">
+            <div class="meaning"><b>英文：</b>${escapeHtml(r.en)}</div>
+            <div class="meaning"><b>牌義：</b>${escapeHtml(meaning)}</div>
+          </div>
+        `;
+        resultsEl.appendChild(div);
+      });
+
+      $("copyBtn").disabled = results.length === 0;
+      $("clearBtn").disabled = results.length === 0;
+    }
+
+    function resultsToText(results) {
+      return results.map((r, i) => {
+        const ori = (r.orientation === "Upright") ? "正位" : "逆位";
+        const arc = (r.arcana === "Major") ? "大阿爾克那" : "小阿爾克那";
+        const meaning = (r.orientation === "Upright") ? r.up : r.rev;
+        return `${i + 1}. ${r.zh}（${ori} / ${arc}）\n牌義：${meaning}\n英文：${r.en}`;
+      }).join("\n\n");
+    }
+
+    $("drawBtn").addEventListener("click", () => {
+      const n = parseInt($("count").value, 10);
+      const allowDup = $("dup").checked;
+      try {
+        lastResults = drawCards(n, allowDup);
+        renderResults(lastResults);
+        toast("已抽牌");
+      } catch (e) {
+        toast(e.message || "抽牌失敗");
+      }
+    });
+
+    $("shuffleBtn").addEventListener("click", () => {
+      deck = shuffle(buildDeck());
+      lastResults = [];
+      renderResults([]);
+      toast("已重新洗牌");
+    });
+
+    $("copyBtn").addEventListener("click", async () => {
+      if (!lastResults.length) return;
+      const text = resultsToText(lastResults);
+      try {
+        await navigator.clipboard.writeText(text);
+        toast("已複製到剪貼簿");
+      } catch {
+        const ta = document.createElement("textarea");
+        ta.value = text;
+        document.body.appendChild(ta);
+        ta.select();
+        document.execCommand("copy");
+        document.body.removeChild(ta);
+        toast("已複製到剪貼簿");
+      }
+    });
+
+    $("clearBtn").addEventListener("click", () => {
+      lastResults = [];
+      renderResults([]);
+      toast("已清空");
+    });
+  </script>
+</body>
+</html>
